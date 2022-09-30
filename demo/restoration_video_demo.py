@@ -10,6 +10,7 @@ import torch
 from mmedit.apis import init_model, restoration_video_inference
 from mmedit.core import tensor2img
 from mmedit.utils import modify_args
+import time
 
 VIDEO_EXTENSIONS = ('.mp4', '.mov')
 
@@ -59,28 +60,33 @@ def main():
     model = init_model(
         args.config, args.checkpoint, device=torch.device('cuda', args.device))
 
-    output = restoration_video_inference(model, args.input_dir,
-                                         args.window_size, args.start_idx,
-                                         args.filename_tmpl, args.max_seq_len)
+    for i in range(10000):
+        start_idx=i
+        # time.sleep(500)
+        output = restoration_video_inference(model, args.input_dir,
+                                            args.window_size, start_idx,
+                                            args.filename_tmpl, args.max_seq_len)
+        torch.cuda.empty_cache()
+        time.sleep(10)
+        file_extension = os.path.splitext(args.output_dir)[1]
+        if file_extension in VIDEO_EXTENSIONS:  # save as video
+            h, w = output.shape[-2:]
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            video_writer = cv2.VideoWriter(args.output_dir, fourcc, 25, (w, h))
+            for i in range(0, output.size(1)):
+                img = tensor2img(output[:, i, :, :, :])
+                video_writer.write(img.astype(np.uint8))
+            cv2.destroyAllWindows()
+            video_writer.release()
+        else:
+            for i in range(args.start_idx, args.start_idx + output.size(1)):
+                output_i = output[:, i - args.start_idx, :, :, :]
+                output_i = tensor2img(output_i)
+                print(args.filename_tmpl.format(start_idx))
 
-    file_extension = os.path.splitext(args.output_dir)[1]
-    if file_extension in VIDEO_EXTENSIONS:  # save as video
-        h, w = output.shape[-2:]
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        video_writer = cv2.VideoWriter(args.output_dir, fourcc, 25, (w, h))
-        for i in range(0, output.size(1)):
-            img = tensor2img(output[:, i, :, :, :])
-            video_writer.write(img.astype(np.uint8))
-        cv2.destroyAllWindows()
-        video_writer.release()
-    else:
-        for i in range(args.start_idx, args.start_idx + output.size(1)):
-            output_i = output[:, i - args.start_idx, :, :, :]
-            output_i = tensor2img(output_i)
-            save_path_i = f'{args.output_dir}/{args.filename_tmpl.format(i)}'
+                # save_path_i = f'{args.output_dir}/{args.filename_tmpl.format(i)}'
+                save_path_i = f'{args.output_dir}/{args.filename_tmpl.format(start_idx)}'
 
-            mmcv.imwrite(output_i, save_path_i)
-
-
+                mmcv.imwrite(output_i, save_path_i)
 if __name__ == '__main__':
     main()
