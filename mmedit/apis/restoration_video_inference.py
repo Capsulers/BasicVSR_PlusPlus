@@ -30,7 +30,8 @@ def restoration_video_inference(model,
                                 window_size,
                                 start_idx,
                                 filename_tmpl,
-                                max_seq_len=None):
+                                max_seq_len=None,
+                                ):
     """Inference image with the model.
 
     Args:
@@ -60,7 +61,7 @@ def restoration_video_inference(model,
         test_pipeline = model.cfg.test_pipeline
     else:
         test_pipeline = model.cfg.val_pipeline
-
+    print(img_dir)
     # check if the input is a video
     file_extension = osp.splitext(img_dir)[1]
     if file_extension in VIDEO_EXTENSIONS:
@@ -86,25 +87,37 @@ def restoration_video_inference(model,
                             f'"{test_pipeline[0]["type"]}".')
 
         # specify start_idx and filename_tmpl
+        print('start_idx', start_idx)
+        print('filename_tmpl', filename_tmpl)
         test_pipeline[0]['start_idx'] = start_idx
         test_pipeline[0]['filename_tmpl'] = filename_tmpl
-
+        
         # prepare data
-        sequence_length = len(glob.glob(osp.join(img_dir, '*')))
+        # sequence_length = len(glob.glob(osp.join(img_dir, '*')))
+        sequence_length = 1
         img_dir_split = re.split(r'[\\/]', img_dir)
+        print(img_dir)
         key = img_dir_split[-1]
+        
         lq_folder = reduce(osp.join, img_dir_split[:-1])
+        print(lq_folder)
         data = dict(
             lq_path=lq_folder,
             gt_path='',
             key=key,
             sequence_length=sequence_length)
-
+    
+    
     # compose the pipeline
     test_pipeline = Compose(test_pipeline)
-    data = test_pipeline(data)
-    data = data['lq'].unsqueeze(0)  # in cpu
 
+    data = test_pipeline(data)
+
+    print("data_lq",data['lq'].shape)
+    data = data['lq'].unsqueeze(0)  # in cpu
+    data = data.unsqueeze(0)  # in cpu
+
+    print("data",data.shape)
     # forward the model
     with torch.no_grad():
         if window_size > 0:  # sliding window framework
