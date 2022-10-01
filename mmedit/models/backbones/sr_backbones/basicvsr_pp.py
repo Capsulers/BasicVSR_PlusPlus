@@ -293,7 +293,7 @@ class BasicVSRPlusPlus(nn.Module):
             Tensor: Output HR sequence with shape (n, t, c, 4h, 4w).
         """
 
-        n, t, c, h, w = lqs.size()
+        # n, t, c, h, w = lqs.size()
 
         # whether to cache the features in CPU (no effect if using CPU)
         if t > self.cpu_cache_length and lqs.is_cuda:
