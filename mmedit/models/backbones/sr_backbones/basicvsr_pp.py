@@ -296,11 +296,11 @@ class BasicVSRPlusPlus(nn.Module):
         # n, t, c, h, w = lqs.size()
 
         # whether to cache the features in CPU (no effect if using CPU)
-        if t > self.cpu_cache_length and lqs.is_cuda:
+        """if t > self.cpu_cache_length and lqs.is_cuda:
             self.cpu_cache = True
         else:
             self.cpu_cache = False
-
+        """
         if self.is_low_res_input:
             lqs_downsample = lqs.clone()
         else:
